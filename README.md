@@ -55,6 +55,7 @@ JWT_SECRET=your_jwt_secret
 ZNAPAI_API_KEY=your_znapai_api_key
 GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_client_secret
+GITHUB_CALLBACK_URL=http://localhost:5001/api/auth/github/callback
 CLIENT_URL=http://localhost:5173
 ```
 
@@ -110,6 +111,77 @@ The application should now be running at `http://localhost:5173`.
 - View the generated resume in the **Resume Preview** section.
 - You can compare it with the original.
 - **Download**: Export the final resume as a PDF or DOCX file, ready for application.
+
+## GitHub Upload Guide
+
+To upload this project to GitHub, follow these steps:
+
+1.  **Initialize Git**:
+    ```bash
+    git init
+    ```
+
+2.  **Create a .gitignore**:
+    Ensure you have a `.gitignore` file in the root directory (or in both `backend` and `frontend`) to exclude `node_modules` and `.env` files.
+    
+    Example root `.gitignore`:
+    ```
+    node_modules/
+    .env
+    .DS_Store
+    dist/
+    ```
+
+3.  **Add Files**:
+    ```bash
+    git add .
+    ```
+
+4.  **Commit Changes**:
+    ```bash
+    git commit -m "Initial commit: AI Resume Builder"
+    ```
+
+5.  **Create a Repository on GitHub**:
+    Go to [GitHub](https://github.com/new) and create a new repository.
+
+6.  **Push to GitHub**:
+    Link your local repository to the remote one and push the changes:
+    ```bash
+    git remote add origin https://github.com/yourusername/resume-builder.git
+    git branch -M main
+    git push -u origin main
+    ```
+
+## Vercel Deployment Guide
+
+### Backend Deployment
+1.  **Install Vercel CLI** (optional) or push your code to GitHub.
+2.  **Go to Vercel Dashboard** and create a new project.
+3.  **Import your repository**.
+4.  **Configure Project**:
+    - **Root Directory**: Select `backend`.
+    - **Environment Variables**: Add all variables from your `backend/.env` file.
+        | Variable | Development Value | Production Value (Vercel) |
+        |----------|-------------------|---------------------------|
+        | `PORT` | `5001` | (Vercel handles this, can omit) |
+        | `NODE_ENV` | `development` | `production` |
+        | `MONGODB_URI` | `...` | Same (or use prod DB) |
+        | `JWT_SECRET` | `secret` | **New strong secret** |
+        | `CLIENT_URL` | `http://localhost:5173` | `https://your-frontend-project.vercel.app` |
+        | `GITHUB_CALLBACK_URL` | `http://localhost:5001/api/auth/github/callback` | `https://your-backend-project.vercel.app/api/auth/github/callback` |
+        | `LINKEDIN_CALLBACK_URL` | `http://localhost:5001/api/auth/linkedin/callback` | `https://your-backend-project.vercel.app/api/auth/linkedin/callback` |
+        | `ZNAPAI_API_KEY` | `...` | Same |
+5.  **Deploy**: Click Deploy.
+
+### Frontend Deployment
+1.  **Create a new Project** in Vercel.
+2.  **Import the same repository**.
+3.  **Configure Project**:
+    - **Root Directory**: Select `frontend`.
+    - **Environment Variables**:
+        - Add `VITE_API_URL` and set it to your deployed backend URL (e.g., `https://your-backend.vercel.app/api`).
+4.  **Deploy**: Click Deploy.
 
 ## License
 This project is open-source and available under the [MIT License](LICENSE).
