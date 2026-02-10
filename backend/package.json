@@ -17,11 +17,11 @@
     "mammoth": "^1.6.0",
     "mongoose": "^8.1.1",
     "multer": "^1.4.5-lts.1",
-    "openai": "^4.28.0",
+    "openai": "^4.104.0",
     "passport": "^0.7.0",
     "passport-github2": "^0.1.12",
     "pdf-parse": "^1.1.1",
-    "pdfkit": "^0.15.0",
+    "pdfkit": "^0.17.2",
     "docx": "^8.5.0"
   },
   "devDependencies": {
