@@ -5,8 +5,8 @@ const openai = new OpenAI({
   baseURL: 'https://api.znapai.com/',
 });
 
-const MODEL = 'gpt-5';
-const REASONING_EFFORT = 'high';
+const MODEL = 'gpt-4.1';
+
 
 /**
  * Parse raw resume text into structured JSON sections
@@ -14,7 +14,6 @@ const REASONING_EFFORT = 'high';
 async function parseResumeContent(rawText) {
   const completion = await openai.chat.completions.create({
     model: MODEL,
-    reasoning_effort: REASONING_EFFORT,
     messages: [
       {
         role: 'system',
@@ -82,7 +81,8 @@ JSON Structure:
         content: `Parse this resume text:\n\n${rawText}`,
       },
     ],
-    max_tokens: 4000,
+    temperature: 0.3,
+    max_tokens: 2000,
     response_format: { type: 'json_object' },
   });
 
@@ -96,7 +96,6 @@ JSON Structure:
 async function extractJobKeywords(jobDescription) {
   const completion = await openai.chat.completions.create({
     model: MODEL,
-    reasoning_effort: REASONING_EFFORT,
     messages: [
       {
         role: 'system',
@@ -117,6 +116,7 @@ Return this exact JSON structure:
         content: `Analyze this job description:\n\n${jobDescription}`,
       },
     ],
+    temperature: 0.3,
     max_tokens: 2000,
     response_format: { type: 'json_object' },
   });
@@ -130,7 +130,6 @@ Return this exact JSON structure:
 async function generateResume(baseResume, projects, jobAnalysis, templateStructure) {
   const completion = await openai.chat.completions.create({
     model: MODEL,
-    reasoning_effort: REASONING_EFFORT,
     messages: [
       {
         role: 'system',
@@ -191,7 +190,8 @@ TEMPLATE STRUCTURE (Preserve this section order):
 ${JSON.stringify(templateStructure, null, 2)}`,
       },
     ],
-    max_tokens: 4000,
+    temperature: 0.3,
+    max_tokens: 2000,
     response_format: { type: 'json_object' },
   });
 
@@ -204,7 +204,6 @@ ${JSON.stringify(templateStructure, null, 2)}`,
 async function generateProjectBullets(projectData) {
   const completion = await openai.chat.completions.create({
     model: MODEL,
-    reasoning_effort: REASONING_EFFORT,
     messages: [
       {
         role: 'system',
@@ -226,7 +225,8 @@ Description/README: ${projectData.readme || projectData.description || 'N/A'}
 Stars: ${projectData.stars || 0}, Forks: ${projectData.forks || 0}`,
       },
     ],
-    max_tokens: 1000,
+    temperature: 0.3,
+    max_tokens: 2000,
     response_format: { type: 'json_object' },
   });
 
