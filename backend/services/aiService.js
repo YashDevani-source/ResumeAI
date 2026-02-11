@@ -5,7 +5,8 @@ const openai = new OpenAI({
   baseURL: 'https://api.znapai.com/',
 });
 
-const MODEL = 'gpt-4o-mini';
+const MODEL = 'gpt-5';
+const REASONING_EFFORT = 'high';
 
 /**
  * Parse raw resume text into structured JSON sections
@@ -13,30 +14,74 @@ const MODEL = 'gpt-4o-mini';
 async function parseResumeContent(rawText) {
   const completion = await openai.chat.completions.create({
     model: MODEL,
+    reasoning_effort: REASONING_EFFORT,
     messages: [
       {
         role: 'system',
-        content: `You are a resume parser. Extract structured information from the resume text and return valid JSON only. No markdown, no explanation.
-Return this exact JSON structure:
+        content: `You are an expert resume parser. content extraction engine. Extract structured information from the resume text and return valid JSON only.
+        
+CRITICAL RULES:
+1.  **Format**: Return ONLY valid JSON.
+2.  **Structure**: Follow the exact JSON schema provided below.
+3.  **Section Order**: Capture the *original* order of sections in the "sectionOrder" array. This is vital for preserving the user's intended layout.
+4.  **Content**: Do not summarize or truncate content unless it's boilerplate. Extract the full text for descriptions.
+5.  **Dates**: Standardize all dates to "Month YYYY" format (e.g., "May 2023") or "Present".
+
+JSON Structure:
 {
-  "summary": "professional summary or objective text",
-  "education": [{"institution":"","degree":"","field":"","startDate":"","endDate":"","gpa":"","details":""}],
-  "experience": [{"company":"","role":"","startDate":"","endDate":"","location":"","bullets":["..."]}],
-  "skills": {"technical":["..."],"soft":["..."],"languages":["..."],"tools":["..."]},
-  "projects": [{"title":"","techStack":["..."],"description":"","bullets":["..."]}],
-  "certifications": [{"name":"","issuer":"","date":""}],
-  "achievements": ["..."],
-  "sectionOrder": ["summary","education","experience","skills","projects","certifications","achievements"],
+  "summary": "Full professional summary text",
+  "education": [
+    {
+      "institution": "University Name",
+      "degree": "Degree Name",
+      "field": "Field of Study",
+      "startDate": "Month YYYY",
+      "endDate": "Month YYYY or Present",
+      "gpa": "3.8/4.0",
+      "details": "Honors, coursework, etc."
+    }
+  ],
+  "experience": [
+    {
+      "company": "Company Name",
+      "role": "Job Title",
+      "startDate": "Month YYYY",
+      "endDate": "Month YYYY or Present",
+      "location": "City, State",
+      "bullets": ["Action verb + task + result", "..."]
+    }
+  ],
+  "skills": {
+    "technical": ["Skill 1", "Skill 2"],
+    "soft": ["Skill 1", "Skill 2"],
+    "languages": ["Language 1"],
+    "tools": ["Tool 1"]
+  },
+  "projects": [
+    {
+      "title": "Project Name",
+      "techStack": ["Tech 1", "Tech 2"],
+      "description": "Project description",
+      "bullets": ["Key contribution 1", "Key contribution 2"]
+    }
+  ],
+  "certifications": [
+    {
+      "name": "Certification Name",
+      "issuer": "Issuing Organization",
+      "date": "Month YYYY"
+    }
+  ],
+  "achievements": ["Achievement 1", "Achievement 2"],
+  "sectionOrder": ["summary", "education", "experience", "projects", "skills", "certifications", "achievements"],
   "style": "single-column"
-}
-Only include sections that exist in the resume. Preserve the order of sections as they appear in the original text in the sectionOrder array. If a section doesn't exist, use an empty array or empty string.`,
+}`,
       },
       {
         role: 'user',
-        content: `Parse this resume:\n\n${rawText}`,
+        content: `Parse this resume text:\n\n${rawText}`,
       },
     ],
-    temperature: 0.1,
     max_tokens: 4000,
     response_format: { type: 'json_object' },
   });
@@ -51,6 +96,7 @@ Only include sections that exist in the resume. Preserve the order of sections a
 async function extractJobKeywords(jobDescription) {
   const completion = await openai.chat.completions.create({
     model: MODEL,
+    reasoning_effort: REASONING_EFFORT,
     messages: [
       {
         role: 'system',
@@ -71,7 +117,6 @@ Return this exact JSON structure:
         content: `Analyze this job description:\n\n${jobDescription}`,
       },
     ],
-    temperature: 0.1,
     max_tokens: 2000,
     response_format: { type: 'json_object' },
   });
@@ -85,48 +130,67 @@ Return this exact JSON structure:
 async function generateResume(baseResume, projects, jobAnalysis, templateStructure) {
   const completion = await openai.chat.completions.create({
     model: MODEL,
+    reasoning_effort: REASONING_EFFORT,
     messages: [
       {
         role: 'system',
-        content: `You are an expert ATS-optimized resume writer. Generate a tailored resume that:
-1. PRESERVES the original resume's section order and structure exactly as specified in templateStructure
-2. Optimizes content for the target job description keywords
-3. Uses strong action verbs and quantifies impact where possible
-4. Does NOT invent any experience or qualifications — only rephrase and optimize existing content
-5. Prioritizes the most relevant projects and skills for the target role
-6. Ensures ATS-friendly formatting (no tables, no icons, standard headings)
+        content: `You are an expert Resume Writer and Career Coach specializing in ATS-optimized resumes.
+        
+Your goal is to rewrite the user's resume to perfectly target the provided Job Description while maintaining honesty and professional standards.
 
-Return valid JSON only with this structure:
+RULES:
+1.  **ATS Optimization**: Use standard keywords from the job description. Avoid creative headings; use standard ones (Experience, Education, Skills).
+2.  **Impact-Driven**: Rewrite bullet points to follow the formula "Action Verb + Task + Result". Quantify results where possible (e.g., "Improved performance by 20%").
+3.  **Relevance**: Prioritize experience and projects that match the job description. You can reorder bullet points within an entry, but do not reorder the entries themselves (chronological order must be preserved).
+4.  **Tone**: Professional, confident, and concise. No personal pronouns (I, me, my).
+5.  **Structure**: Strictly follow the requested JSON structure.
+6.  **Formatting**: Ensure all dates are consistent "Month YYYY".
+
+Return valid JSON only:
 {
-  "summary": "tailored professional summary",
-  "education": [{"institution":"","degree":"","field":"","startDate":"","endDate":"","gpa":"","details":""}],
-  "experience": [{"company":"","role":"","startDate":"","endDate":"","location":"","bullets":["..."]}],
-  "skills": {"technical":["..."],"soft":["..."],"languages":["..."],"tools":["..."]},
-  "projects": [{"title":"","techStack":["..."],"description":"","bullets":["..."]}],
-  "certifications": [{"name":"","issuer":"","date":""}],
-  "achievements": ["..."],
-  "atsScore": 85
+  "summary": "Compelling professional summary tailored to the role",
+  "education": [...],
+  "experience": [
+    {
+      "company": "Company",
+      "role": "Role",
+      "startDate": "Month YYYY",
+      "endDate": "Month YYYY",
+      "location": "City, State",
+      "bullets": ["Tailored bullet 1", "Tailored bullet 2"]
+    }
+  ],
+  "skills": {
+    "technical": ["..."],
+    "soft": ["..."],
+    "languages": ["..."],
+    "tools": ["..."]
+  },
+  "projects": [...],
+  "certifications": [...],
+  "achievements": [...],
+  "atsScore": 90
 }
-The atsScore should be your estimate (0-100) of how well this resume matches the job description.`,
+
+Evaluate the match between the generated resume and the job description and assign an 'atsScore' (0-100).`,
       },
       {
         role: 'user',
         content: `Generate a tailored resume.
 
-ORIGINAL RESUME CONTENT:
+BASE RESUME:
 ${JSON.stringify(baseResume, null, 2)}
 
-AVAILABLE PROJECTS:
+RELEVANT PROJECTS (Include these if they add value):
 ${JSON.stringify(projects, null, 2)}
 
-JOB ANALYSIS:
+TARGET JOB ANALYSIS:
 ${JSON.stringify(jobAnalysis, null, 2)}
 
-TEMPLATE STRUCTURE (must preserve this order):
+TEMPLATE STRUCTURE (Preserve this section order):
 ${JSON.stringify(templateStructure, null, 2)}`,
       },
     ],
-    temperature: 0.3,
     max_tokens: 4000,
     response_format: { type: 'json_object' },
   });
@@ -140,6 +204,7 @@ ${JSON.stringify(templateStructure, null, 2)}`,
 async function generateProjectBullets(projectData) {
   const completion = await openai.chat.completions.create({
     model: MODEL,
+    reasoning_effort: REASONING_EFFORT,
     messages: [
       {
         role: 'system',
@@ -161,7 +226,6 @@ Description/README: ${projectData.readme || projectData.description || 'N/A'}
 Stars: ${projectData.stars || 0}, Forks: ${projectData.forks || 0}`,
       },
     ],
-    temperature: 0.4,
     max_tokens: 1000,
     response_format: { type: 'json_object' },
   });
